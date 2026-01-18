@@ -211,7 +211,14 @@ TcpLedbatPlusPlus::IncreaseWindow(Ptr<TcpSocketState> tcb, uint32_t segmentsAcke
         }
     }
     if (m_doSs == DO_SLOWSTART && tcb->m_cWnd <= tcb->m_ssThresh && (m_flag & LEDBAT_CAN_SS))
-    {
+    {   
+        int64_t queue_delay;
+        uint64_t current_delay = CurrentDelay(&TcpLedbatPlusPlus::MinCircBuf);
+        uint64_t base_delay = BaseDelay();
+
+        queue_delay = current_delay > base_delay ? current_delay - base_delay : 0;
+        NS_LOG_INFO("SS_queue_delay : " << queue_delay 
+            << " Target_Delay : " << m_target.GetMilliSeconds());
         SlowStart(tcb, segmentsAcked);
     }
     else
