@@ -7,9 +7,6 @@ NS3_CMD = ["./ns3", "run", "scratch/SimulationTest_1"]
 W1_RE = re.compile(r"W:\s*([0-9.]+)")
 R1_RE = re.compile(r"delay_ratio:\s*([0-9.]+)")
 
-W2_RE = re.compile(r"W=([0-9.]+)")
-R2_RE = re.compile(r"ratio=([0-9.]+)")
-
 proc = subprocess.run(
     NS3_CMD,
     stdout=subprocess.PIPE,
@@ -32,18 +29,10 @@ for line in proc.stdout.splitlines():
     m1w = W1_RE.search(line)
     m1r = R1_RE.search(line)
 
-    m2w = W2_RE.search(line)
-    m2r = R2_RE.search(line)
-
     if m1w:
         pending_w = float(m1w.group(1))
     if m1r:
         pending_r = float(m1r.group(1))
-
-    if m2w:
-        pending_w = float(m2w.group(1))
-    if m2r:
-        pending_r = float(m2r.group(1))
 
     if pending_w is not None and pending_r is not None:
         samples.append((pending_w, pending_r))
