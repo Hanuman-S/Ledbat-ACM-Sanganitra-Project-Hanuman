@@ -243,7 +243,7 @@ TcpLedbatPlusPlus::CongestionAvoidance(Ptr<TcpSocketState> tcb, uint32_t segment
     uint32_t base_delay = BaseDelay();
     uint32_t segmentSize = tcb->m_segmentSize;
 
-    double ackFactor = static_cast<double>(tcb->m_segmentSize) / static_cast<double>(tcb->m_cWnd);
+    double ackFactor = tcb->m_segmentSize / static_cast<double>(tcb->m_cWnd);
     double W = static_cast<double>(cwnd) / segmentSize;
 
     queue_delay = current_delay > base_delay ? current_delay - base_delay : 0;
@@ -265,10 +265,13 @@ TcpLedbatPlusPlus::CongestionAvoidance(Ptr<TcpSocketState> tcb, uint32_t segment
                 << " queue_delay: " << queue_delay
                 << " delay_ratio: " << delayRatio
                 << " W: " << W);
+
     uint32_t flightSizeBeforeAck = tcb->m_bytesInFlight.Get() + (segmentsAcked * tcb->m_segmentSize);
     max_cwnd = flightSizeBeforeAck + static_cast<uint32_t>(m_allowedIncrease * tcb->m_segmentSize);
+
     cwnd = std::min(cwnd, max_cwnd);
     cwnd = std::max(cwnd, m_minCwnd * tcb->m_segmentSize);
+
     tcb->m_cWnd = cwnd;
 
     if (tcb->m_cWnd <= tcb->m_ssThresh)
