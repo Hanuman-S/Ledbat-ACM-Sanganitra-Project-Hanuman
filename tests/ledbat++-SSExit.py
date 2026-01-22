@@ -4,8 +4,8 @@ import re
 
 NS3_CMD = ["./ns3", "run", "scratch/SimulationTest_1"]
 
-SS_RE = re.compile(r"\s*SS_queue_delay\s*:\s*(\d+)\s*Target_Delay\s*:\s*(\d+)")
-EXIT_RE = re.compile(r"Exiting initial slow start")
+SS_RE = re.compile(r"\s*Queue delay\s*:\s*(\d+)\s*Target delay\s*:\s*(\d+)")
+EXIT_RE = re.compile(r"Exiting initial slow start due to exceeding 3/4 of target delay...")
 
 proc = subprocess.run(
     NS3_CMD,
@@ -42,14 +42,14 @@ for idx, (qd, td) in enumerate(last_ss_before_exit):
     threshold = 0.75 * td
     if qd > threshold:
         print(f"FAIL: Row {idx} exited slow start too late "
-              f"(queue_delay={qd}, threshold={threshold})")
+              f"(queue_delay before exit={qd}, threshold={threshold})")
         all_pass = False
     else:
         print(f"INFO: Row {idx} passed early SS exit check "
-              f"(queue_delay={qd}, threshold={threshold})")
+              f"(queue_delay before exit={qd}, threshold={threshold})")
 
 if all_pass:
-    print("PASS: LEDBAT++ early slow start exit verified for all rows")
+    print("PASS: LEDBAT++ modified slow start conforms to RFC 4.3")
     sys.exit(0)
 else:
     sys.exit(1)

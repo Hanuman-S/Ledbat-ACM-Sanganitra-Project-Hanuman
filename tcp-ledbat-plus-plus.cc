@@ -187,20 +187,21 @@ void
 TcpLedbatPlusPlus::IncreaseWindow(Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
     NS_LOG_FUNCTION(this << tcb << segmentsAcked);
-    int64_t queue_delay = 0;
-    if(m_flag & LEDBAT_VALID_OWD){
-        uint64_t current_delay = CurrentDelay(&TcpLedbatPlusPlus::MinCircBuf);
-        uint64_t base_delay = BaseDelay();
-
-        queue_delay = current_delay > base_delay ? current_delay - base_delay : 0;
-    }
     if (tcb->m_cWnd.Get() <= tcb->m_segmentSize && !(tcb->m_initialSs))
     {
         m_flag |= LEDBAT_CAN_SS;
     } 
+
+    uint32_t queueDelay = 0;
+
     if (tcb->m_initialSs && (m_flag & LEDBAT_VALID_OWD))
     {
-        if (static_cast<double>(queue_delay) > 0.75 * static_cast<double>(m_target.GetMilliSeconds()))
+        uint32_t currentDelay = CurrentDelay(&TcpLedbatPlusPlus::MinCircBuf);
+        uint32_t baseDelay = BaseDelay();
+
+        queueDelay = currentDelay > baseDelay ? currentDelay - baseDelay : 0;
+
+        if (static_cast<double>(queueDelay) > 0.75 * static_cast<double>(m_target.GetMilliSeconds()))
         {
 			NS_LOG_INFO("Exiting initial slow start due to exceeding 3/4 of target delay...");
             tcb->m_initialSs = false;
@@ -211,10 +212,13 @@ TcpLedbatPlusPlus::IncreaseWindow(Ptr<TcpSocketState> tcb, uint32_t segmentsAcke
             m_flag |= LEDBAT_CAN_SS;
         }
     }
+
+    if(m_flag & LEDBAT_VALID_OWD){
+        NS_LOG_INFO("Queue delay: "<< queueDelay<<" Target delay: "<< m_target.GetMilliSeconds());
+    }
+
     if (m_doSs == DO_SLOWSTART && tcb->m_cWnd <= tcb->m_ssThresh && (m_flag & LEDBAT_CAN_SS))
-    {   
-        NS_LOG_INFO("SS_queue_delay : " << queue_delay 
-            << " Target_Delay : " << m_target.GetMilliSeconds());
+    {
         SlowStart(tcb, segmentsAcked);
     }
     else
