@@ -7,86 +7,88 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("LedbatMdTest");
+NS_LOG_COMPONENT_DEFINE("SimulationTest1");
 
-int
-main (int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-  LogComponentEnable ("LedbatMdTest", LOG_LEVEL_INFO);
-  LogComponentEnable ("TcpLedbat", LOG_LEVEL_ALL);
+    LogComponentEnable("SimulationTest1", LOG_LEVEL_INFO);
+    LogComponentEnable("TcpLedbatPlusPlus", LOG_LEVEL_ALL);
 
-  NS_LOG_INFO ("LEDBAT + Cubic simulation started");
+    NS_LOG_INFO("LEDBAT + Cubic simulation started");
 
-  NodeContainer nodes;
-  nodes.Create (2); //Sender and Receiver
+    NodeContainer nodes;
+    nodes.Create(2); // Sender and Receiver
 
-  PointToPointHelper p2p; //Setting Channel bandwidth and delay, in a way to increase delay as much as possible
-  p2p.SetDeviceAttribute ("DataRate", StringValue ("500Kbps"));
-  p2p.SetChannelAttribute ("Delay", StringValue ("100ms"));
+    PointToPointHelper p2p; // Setting Channel bandwidth and delay, in a way to increase delay as much as possible
+    p2p.SetDeviceAttribute("DataRate", StringValue("500Kbps"));
+    p2p.SetChannelAttribute("Delay", StringValue("100ms"));
 
-  NetDeviceContainer devices = p2p.Install (nodes);
+    NetDeviceContainer devices = p2p.Install(nodes);
 
-  InternetStackHelper internet;
-  internet.Install (nodes); // Adding TCP, IP, ... required protocols
+    InternetStackHelper internet;
+    internet.Install(nodes); // Adding TCP, IP, ... required protocols
 
-  TrafficControlHelper tch;
-  tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc",
-                        "MaxSize", StringValue ("10p")); // 10 packets in one queue
-  tch.Install (devices);
+    TrafficControlHelper tch;
+    tch.SetRootQueueDisc("ns3::PfifoFastQueueDisc",
+                         "MaxSize", StringValue("10p")); // 10 packets in one queue
+    tch.Install(devices);
 
-  Ipv4AddressHelper address;
-  address.SetBase ("10.1.1.0", "255.255.255.0");
-  Ipv4InterfaceContainer interfaces = address.Assign (devices);
+    Ipv4AddressHelper address;
+    address.SetBase("10.1.1.0", "255.255.255.0");
+    Ipv4InterfaceContainer interfaces = address.Assign(devices);
 
-  TypeId cubicTid  = TypeId::LookupByName ("ns3::TcpCubic");
-  TypeId ledbatTid = TypeId::LookupByName ("ns3::TcpLedbat");
+    TypeId cubicTid = TypeId::LookupByName("ns3::TcpCubic");
+    TypeId ledbatTid = TypeId::LookupByName("ns3::TcpLedbatPlusPlus");
 
-  Config::Set ("/NodeList/0/$ns3::TcpL4Protocol/SocketType",
-               TypeIdValue (cubicTid)); // Cubic initialisation
+    Config::Set("/NodeList/0/$ns3::TcpL4Protocol/SocketType",
+                TypeIdValue(cubicTid)); // Cubic initialisation
 
-  uint16_t cubicPort = 6000;
+    uint16_t cubicPort = 6000;
 
-  BulkSendHelper cubicSender (
-      "ns3::TcpSocketFactory",
-      InetSocketAddress (interfaces.GetAddress (1), cubicPort));
+    BulkSendHelper cubicSender(
+        "ns3::TcpSocketFactory",
+        InetSocketAddress(interfaces.GetAddress(1), cubicPort));
 
-  cubicSender.SetAttribute ("MaxBytes", UintegerValue (0));
+    cubicSender.SetAttribute("MaxBytes", UintegerValue(0));
 
-  ApplicationContainer cubicApp = cubicSender.Install (nodes.Get (0));
-  cubicApp.Start (Seconds (0.5));
-  cubicApp.Stop (Seconds (10.0));
+    ApplicationContainer cubicApp = cubicSender.Install(nodes.Get(0));
+    cubicApp.Start(Seconds(0.5));
+    cubicApp.Stop(Seconds(6.0)); // stop Cubic briefly
 
-  PacketSinkHelper cubicSink (
-      "ns3::TcpSocketFactory",
-      InetSocketAddress (Ipv4Address::GetAny (), cubicPort));
+    cubicApp.Start(Seconds(6.5)); // restart Cubic
+    cubicApp.Stop(Seconds(10.0));
 
-  cubicSink.Install (nodes.Get (1));
+    PacketSinkHelper cubicSink(
+        "ns3::TcpSocketFactory",
+        InetSocketAddress(Ipv4Address::GetAny(), cubicPort));
 
-  Config::Set ("/NodeList/0/$ns3::TcpL4Protocol/SocketType",
-               TypeIdValue (ledbatTid)); // LEDBAT initialisation
+    cubicSink.Install(nodes.Get(1));
 
-  uint16_t ledbatPort = 7000;
+    Config::Set("/NodeList/0/$ns3::TcpL4Protocol/SocketType",
+                TypeIdValue(ledbatTid)); // LEDBAT initialisation
 
-  BulkSendHelper ledbatSender (
-      "ns3::TcpSocketFactory",
-      InetSocketAddress (interfaces.GetAddress (1), ledbatPort));
+    uint16_t ledbatPort = 7000;
 
-  ledbatSender.SetAttribute ("MaxBytes", UintegerValue (0));
+    BulkSendHelper ledbatSender(
+        "ns3::TcpSocketFactory",
+        InetSocketAddress(interfaces.GetAddress(1), ledbatPort));
 
-  ApplicationContainer ledbatApp = ledbatSender.Install (nodes.Get (0));
-  ledbatApp.Start (Seconds (2.0));   // starts after Cubic fills queue
-  ledbatApp.Stop (Seconds (10.0));
+    ledbatSender.SetAttribute("MaxBytes", UintegerValue(0));
 
-  PacketSinkHelper ledbatSink (
-      "ns3::TcpSocketFactory",
-      InetSocketAddress (Ipv4Address::GetAny (), ledbatPort));
+    ApplicationContainer ledbatApp = ledbatSender.Install(nodes.Get(0));
+    ledbatApp.Start(Seconds(2.0)); // starts after Cubic fills queue
+    ledbatApp.Stop(Seconds(10.0));
 
-  ledbatSink.Install (nodes.Get (1));
+    PacketSinkHelper ledbatSink(
+        "ns3::TcpSocketFactory",
+        InetSocketAddress(Ipv4Address::GetAny(), ledbatPort));
 
-  Simulator::Stop (Seconds (10.0));
-  Simulator::Run ();
-  Simulator::Destroy ();
+    ledbatSink.Install(nodes.Get(1));
 
-  NS_LOG_INFO ("Simulation finished");
-  return 0;
+    Simulator::Stop(Seconds(10.0));
+    Simulator::Run();
+    Simulator::Destroy();
+
+    NS_LOG_INFO("Simulation finished");
+    return 0;
 }
