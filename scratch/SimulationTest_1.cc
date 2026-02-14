@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 
     ApplicationContainer cubicApp = cubicSender.Install(nodes.Get(0));
     cubicApp.Start(Seconds(0.5));
-    cubicApp.Stop(Seconds(6.0)); // stop Cubic briefly
+    cubicApp.Stop(Seconds(6.0)); // stop Cubic for a brief amount of time
 
     cubicApp.Start(Seconds(6.5)); // restart Cubic
     cubicApp.Stop(Seconds(10.0));
